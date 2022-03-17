@@ -8,9 +8,11 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
 @EnableWebSecurity
@@ -35,16 +37,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .authorizeRequests()
-                .mvcMatchers("/api/greet").hasAnyRole("USER", "ADMIN")
+                .mvcMatchers("/api/greet").authenticated() //.hasAnyRole("USER", "ADMIN")
                 .and()
                 .authorizeRequests()
                 .mvcMatchers("/api/admingreet").hasRole("ADMIN")
                 .and().authorizeRequests()
                 .mvcMatchers("/api/users").permitAll()  // allows for new user to be created
-                .mvcMatchers(HttpMethod.POST, "api/auth/login").permitAll()
+                .mvcMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .antMatchers("/**").authenticated()
-                .and().formLogin()
-                .and().httpBasic();
+                .and()
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }
 
     @Bean
